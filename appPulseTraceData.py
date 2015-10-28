@@ -8,6 +8,7 @@ import datetime
 import urllib
 import urllib2
 import logging
+from kafka import SimpleProducer, KafkaClient, KafkaConsumer, KeyedProducer
 
 #for i in range(100):
 #    time.sleep(1)
@@ -45,6 +46,10 @@ logging.addLevelName(METRICS, "METRICS")
 logging.basicConfig(filename='metrics.log',format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 logger.setLevel(METRICS)
+
+#KAFKA
+kafka = KafkaClient('16.125.104.60:9092')
+producer = KeyedProducer(kafka)
 
 #-----------------LOGIN--------------------
 print "LOGIN WITH USER NAME : %s " % (username),
@@ -92,7 +97,8 @@ if response.getcode() == 200:
     
 for application in applications['applications']:
     print (BOLD +"APP_NAME : "+ ENDC + OKBLUE + application['appName'] + ENDC + BOLD).ljust(60)  + (" APP_ID : " + ENDC + OKBLUE + application['appId'] + ENDC)
-    logger.info("APP_NAME : "+application['appName']+" APP_ID : "+application['appId'])
+    logger.info('APP_NAME : '+application['appName']+' APP_ID : '+application['appId'])
+    producer.send_messages(b'picasso-apppulse',b'INFO', b"APP_NAME : "+str(application['appName'])+" APP_ID : "+str(application['appId']))
     app_id = application['appId']
     
     #-----------------TRANSACTIONS--------------------
@@ -113,6 +119,7 @@ for application in applications['applications']:
     for transaction in transactions['responseList']:
         print ("\t"+ BOLD +"TRANSACTION_NAME : "+ ENDC + OKBLUE + str(transaction['transactionName'])  + ENDC).ljust(70) + (BOLD + "  RESPONSE_TIME : "+ ENDC + OKBLUE + str(transaction['responseTime']) + ENDC).ljust(70) + (BOLD + "  THROUGHPUT : "+ ENDC + OKBLUE + str(transaction['throughput']) + ENDC).ljust(70) + (BOLD +"  TIME_CONSUMING : "+ ENDC + OKBLUE + str(transaction['timeConsuming']) + ENDC)
         logger.log(METRICS,"\tTRANSACTION_NAME : "+ str(transaction['transactionName'])+ "  RESPONSE_TIME : "+str(transaction['responseTime']) +"  THROUGHPUT : "+ str(transaction['throughput']) +"  TIME_CONSUMING : "+ str(transaction['timeConsuming']) )
+        producer.send_messages(b'picasso-apppulse',b'METRICS', b"TRANSACTION_NAME : "+ str(transaction['transactionName'])+ "  RESPONSE_TIME : "+str(transaction['responseTime']) +"  THROUGHPUT : "+ str(transaction['throughput']) +"  TIME_CONSUMING : "+ str(transaction['timeConsuming']))
         #-----------------TRACES--------------------
         print "GETTING TRANSACTION NAME '%s' TRACES" %(transaction['transactionName']),
         
@@ -131,7 +138,4 @@ for application in applications['applications']:
         for trace in traces['responseList']:
             print ("\t\t"+ BOLD +"CROSS_VM_ID : "+ ENDC + OKBLUE + str(trace['crossVmId'])  + ENDC).ljust(70) + (BOLD + "  DURATION : "+ ENDC + OKBLUE + str(trace['duration']) + ENDC).ljust(70) + (BOLD + "  EXCEPTIONS : "+ ENDC + OKBLUE + str(trace['exceptionCount']) + ENDC).ljust(70) + (BOLD +"  TIME_STAMP : "+ ENDC + OKBLUE + str(trace['timestamp']) + ENDC)
             logger.log(METRICS,"\t\tCROSS_VM_ID : "+ str(trace['crossVmId'])  +"  DURATION : "+ str(trace['duration']) +"  EXCEPTIONS : "+ str(trace['exceptionCount']) +"  TIME_STAMP : "+ str(trace['timestamp']))
-            
-#logfile = raw_input('EXPORT TO LOG FILE?[YES]') or "YES"
-#if logfile == 'yes' or logfile == 'YES':
-    
+            producer.send_messages(b'picasso-apppulse',b'METRICS' b"CROSS_VM_ID : "+ str(trace['crossVmId'])  +"  DURATION : "+ str(trace['duration']) +"  EXCEPTIONS : "+ str(trace['exceptionCount']) +"  TIME_STAMP : "+ str(trace['timestamp']))
