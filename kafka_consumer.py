@@ -27,8 +27,8 @@ UNDERLINE = '\033[4m'
 
 
 kafka = KafkaClient('16.125.104.60:9092')
-producer = SimpleProducer(kafka)
-producer.send_messages(b'picasso-apppulse', b'test message')
+#producer = SimpleProducer(kafka)
+#producer.send_messages(b'picasso-apppulse', b'test message')
 
 
 for t in kafka.topics:
@@ -43,3 +43,4 @@ for message in consumer:
     print("%s:%d:%d: key=%s value=%s" % (message.topic, message.partition,
                                          message.offset, message.key,
                                          message.value))
+    print "\n"
